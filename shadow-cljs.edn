@@ -5,10 +5,26 @@
   "src/test"]
 
  :dependencies
- []
+ [[cider/cider-nrepl "0.26.0"]]
+
+ :nrepl {:port 6001
+         :host "0.0.0.0"}
 
  :builds
  {:main
   {:target :esm
+   :runtime :custom
+   :devtools {:client-ns devtools
+              :loader-mode :none}
+   :compiler-options {:optimizations :simple}
    :output-dir "public/js"
-   :modules {:main {:init-fn core/init}}}}}
+   :modules {:main {:init-fn core/init
+
+                    ;; The JS code below will be prepend to `public/js/main.js`.
+                    ;; It was copied from the `deno_bootstrap.js` file
+                    ;; with `(slurp "deno_bootstrap.js")`. It is based on
+                    ;; `https://github.com/thheller/shadow-cljs/blob/629406b2029825dcafc8b53f58da3252d3b4a1b5/src/main/shadow/cljs/node_bootstrap.txt`
+                    ;; but was adapted to make it work with Deno.
+                    :prepend "var global = globalThis;\n\nvar goog = global.goog;\n\nvar SHADOW_IMPORTED = global.SHADOW_IMPORTED = {};\nimport * as PATH from \"https://deno.land/std@0.201.0/path/mod.ts\";\nimport * as VM from \"https://deno.land/std@0.140.0/node/vm.ts\";\n\nvar SHADOW_PROVIDE = function(name) {\n  return goog.exportPath_(name, undefined);\n};\n\nvar SHADOW_REQUIRE = function(name) {\n  if (goog.isInModuleLoader_()) {\n    return goog.module.getInternal_(name);\n  }\n  return true;\n};\n\nvar SHADOW_WRAP = function(js) {\n  var code = \"(function (require, module, __filename, __dirname) {\\n\";\n  // this is part of goog/base.js and for some reason the only global var not on goog or goog.global\n    code += \"var COMPILED = false;\\n\"\n  code += js;\n  code += \"\\n});\";\n  return code;\n};\n\nvar SHADOW_IMPORT_PATH = \"./public/js/cljs-runtime\"\n\nvar SHADOW_IMPORT = global.SHADOW_IMPORT = async function(src) {\n  if (CLOSURE_DEFINES[\"shadow.debug\"]) {\n    console.info(\"SHADOW load:\", src);\n  }\n\n  SHADOW_IMPORTED[src] = true;\n\n  // SHADOW_IMPORT_PATH is an absolute path\n  var filePath = PATH.resolve(SHADOW_IMPORT_PATH, src);\n  var fn;\n\n  try {\n    fn = await import(filePath);\n  } catch(e) {\n    console.log('=== '+e.message);\n  }\n\n  return true;\n};\n\n// strip a leading comment as generated for (defn x \"foo\" [a] a)\n// /**\n//  * foo\n//  */\n// (function (){\n\nfunction SHADOW_STRIP_COMMENT(js) {\n  if (!js.startsWith(\"/*\")) {\n    return js;\n  } else {\n    return js.substring(js.indexOf(\"*/\") + 2).trimLeft();\n  }\n};\n\nglobal.SHADOW_NODE_EVAL = function(js, smJson) {\n  // special case handling for require since it may otherwise not be available\n  // FIXME: source maps get destroyed by the strip\n  js = \"(function cljsEval(require) {\\n return \" + SHADOW_STRIP_COMMENT(js) + \"\\n});\";\n\n  if (smJson) {\n    js += \"\\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,\";\n    js += btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(smJson))));\n  }\n\n  var fn = VM.runInThisContext.call(global, js,\n    {filename: \"<eval>\",\n     lineOffset: -1, // wrapper adds one line on top\n     displayErrors: true});\n\n  return fn(null);\n};\n"
+
+}}}}}

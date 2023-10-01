@@ -1,6 +1,6 @@
 (ns server
-  (:require ["https://deno.land/std@0.91.0/http/server.ts" :as http]
-            [cljs.core.async :refer [go go-loop chan >! <! close!]]))
+  (:require ["https://deno.land/std@0.160.0/http/server.ts" :as http]
+            ))
 
 (defn headers->map
   [headers]
@@ -10,8 +10,8 @@
    (.entries headers)))
 
 (defn req->ring
-  [^http/ServerRequest request]
-  (let [conn ^js/Deno.Conn (.-conn request)]
+  [^http/ServerRequest request ^http/ConnInfo connInfo]
+  (let [conn connInfo]
     {:body (.-body request)
      :headers (headers->map (.-headers request))
      :request-method (keyword (.toLowerCase (.-method request)))
@@ -31,11 +31,12 @@
 (defn http-server
   ([handler] (http-server handler {}))
   ([handler {:keys [host port]
-             :or {host "0.0.0.0" port 8080}}]
+             :or {host "0.0.0.0" port 8000}}]
    (println (str "Starting Deno HTTP server at " host ":" port))
-   (http/listenAndServe (clj->js {:hostname host :port port})
-                        #(->> %
-                              req->ring
-                              handler
-                              ring->response
-                              (.respond %)))))
+   (http/serve (fn [request connInfo]
+                 (let [ring-request (req->ring request connInfo)
+                       ring-response (handler ring-request)]
+                   ;; TODO: convert all parts of ring-response
+                   (js/Response. (:body ring-response)
+                                 #js {:status (:status ring-response)})))
+               )))
