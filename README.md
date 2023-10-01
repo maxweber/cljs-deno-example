@@ -4,13 +4,19 @@ A "Hello, world" HTTP server example running ClojureScript on Deno.
 
 ## Running
 
+Run:
+
+```shell
+npm install
+```
+
 Start shadow-cljs with:
 
 ```shell
 npm run shadow
 ```
 
-Start the Deno process with:
+Start the Deno process in a second terminal with:
 
 ```shell
 npm run deno
