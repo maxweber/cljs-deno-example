@@ -3,10 +3,13 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "shadow-cljs compile main && deno run --allow-net public/js/main.js"
+    "shadow": "shadow-cljs watch main",
+    "deno": "deno run --allow-net --allow-read --inspect public/js/main.js"
   },
   "devDependencies": {
     "shadow-cljs": "2.11.26"
   },
-  "dependencies": {}
+  "dependencies": {
+    "ws": "^8.9.0"
+  }
 }

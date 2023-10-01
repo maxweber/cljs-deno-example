@@ -7,4 +7,4 @@
    :body "Hello, world"})
 
 (defn init []
-  (http-server handler))
+  (http-server #'handler))
